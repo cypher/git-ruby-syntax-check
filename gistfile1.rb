@@ -8,7 +8,8 @@
 # Put this code into a file called "pre-commit" inside your .git/hooks
 # directory, and make sure it is executable ("chmod +x .git/hooks/pre-commit")
 #
-# Tested only with Git 1.6.4-rc1, but should work with any Git 1.6
+# Tested only with Git 1.6.4-rc1, but should work with any Git 1.6.*
+# Requires Ruby 1.8.6 or better
 
 require 'open3'
 include Open3
