@@ -24,7 +24,7 @@ problematic_files = changed_ruby_files.reduce([]) do |problematic_files, file|
     errors = stderr.read.split("\n")
   end
 
-  unless errors.nil? or errors.empty?
+  unless errors.empty?
     errors.map!{ |line| line.sub(/#{file}:/, '') }
     problematic_files << "#{file}:\n#{errors.join("\n")}"
   end
