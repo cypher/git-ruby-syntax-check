@@ -13,12 +13,12 @@
 require 'open3'
 include Open3
 
-changed_ruby_files = `git diff-index --name-only --cached HEAD`.reduce([]) do |files, line|
+changed_ruby_files = `git diff-index --name-only --cached HEAD`.inject([]) do |files, line|
   files << line.chomp if line =~ /(.+\.(e?rb|task)|Rakefile)/
   files
 end
 
-problematic_files = changed_ruby_files.reduce([]) do |problematic_files, file|
+problematic_files = changed_ruby_files.inject([]) do |problematic_files, file|
   cmd = if file =~ /\.erb\z/
     # Set trim mode to "-", just as Rails does
     "erb -xT - #{file} | ruby -c"
