@@ -40,7 +40,7 @@ problematic_files = changed_ruby_files.reduce([]) do |problematic_files, file|
 end
 
 if problematic_files.size > 0
-  $stderr.puts problematic_files.join("\n")
+  $stderr.puts problematic_files.join("\n\n")
   exit 1
 else
   # All is well
