@@ -14,19 +14,13 @@ require 'open3'
 include Open3
 
 changed_ruby_files = `git diff-index --name-only --cached HEAD`.reduce([]) do |files, line|
-  files << line.chomp if line =~ /(.+\.(e?rb|task)|Rakefile)/
+  files << line.chomp if line =~ /(.+\.(rb|task)|Rakefile)/
   files
 end
 
 problematic_files = changed_ruby_files.reduce([]) do |problematic_files, file|
-  cmd = if file =~ /erb\z/
-    "erb -x #{file} | ruby -c"
-  else
-    "ruby -c #{file}"
-  end
-
   errors = nil
-  popen3(cmd) do |stdin, stdout, stderr|
+  popen3("ruby -c #{file}") do |stdin, stdout, stderr|
     errors = stderr.read.split("\n")
   end
 
