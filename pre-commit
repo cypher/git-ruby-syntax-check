@@ -20,21 +20,23 @@ changed_ruby_files = `git diff-index --name-only --cached HEAD`.inject([]) do |f
 end
 
 problematic_files = changed_ruby_files.inject([]) do |problematic_files, file|
-  cmd = if file =~ /\.erb\z/
-    # Set trim mode to "-", just as Rails does
-    "erb -xT - #{file} | ruby -c"
-  else
-    "ruby -c #{file}"
-  end
+  if File.exists? file
+    cmd = if file =~ /\.erb\z/
+      # Set trim mode to "-", just as Rails does
+      "erb -xT - #{file} | ruby -c"
+    else
+      "ruby -c #{file}"
+    end
 
-  errors = nil
-  popen3(cmd) do |stdin, stdout, stderr|
-    errors = stderr.read.split("\n")
-  end
+    errors = nil
+    popen3(cmd) do |stdin, stdout, stderr|
+      errors = stderr.read.split("\n")
+    end
 
-  unless errors.empty?
-    errors.map!{ |line| line.sub(/#{file}:/, '') }
-    problematic_files << "#{file}:\n#{errors.join("\n")}"
+    unless errors.empty?
+      errors.map!{ |line| line.sub(/#{file}:/, '') }
+      problematic_files << "#{file}:\n#{errors.join("\n")}"
+    end
   end
 
   problematic_files
