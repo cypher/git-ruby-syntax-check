@@ -20,7 +20,7 @@ changed_ruby_files = `git diff-index --name-only --cached HEAD`.inject([]) do |f
 end
 
 problematic_files = changed_ruby_files.inject([]) do |problematic_files, file|
-  if File.exists? file
+  if File.readable? file
     cmd = if file =~ /\.erb\z/
       # Set trim mode to "-", just as Rails does
       "erb -xT - #{file} | ruby -c"
