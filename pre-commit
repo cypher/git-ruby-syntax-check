@@ -14,8 +14,11 @@
 require 'open3'
 include Open3
 
+# Set this ti true if you want warnings to stop your commit
+stop_on_warnings = false
+
 changed_ruby_files = `git diff-index --name-only --cached HEAD`.inject([]) do |files, line|
-  files << line.chomp if line =~ /(.+\.(e?rb|task)|Rakefile)/
+  files << line.chomp if line =~ /(.+\.(e?rb|task|rake)|Rakefile)/
   files
 end
 
@@ -32,6 +35,8 @@ problematic_files = changed_ruby_files.inject([]) do |problematic_files, file|
     popen3(cmd) do |stdin, stdout, stderr|
       errors = stderr.read.split("\n")
     end
+    
+    errors.reject!{ |line| line =~ /[0-9]+:\s+warning:/ } unless stop_on_warnings
 
     unless errors.empty?
       errors.map!{ |line| line.sub(/#{file}:/, '') }
