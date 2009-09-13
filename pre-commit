@@ -17,7 +17,7 @@ include Open3
 # Set this to true if you want warnings to stop your commit
 stop_on_warnings = false
 
-changed_ruby_files = `git diff-index --name-only --cached HEAD`.inject([]) do |files, line|
+changed_ruby_files = `git diff-index --name-only --cached HEAD`.split("\n").inject([]) do |files, line|
   files << line.chomp if line =~ /(.+\.(e?rb|task|rake)|Rakefile)/
   files
 end
