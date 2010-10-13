@@ -18,7 +18,7 @@ include Open3
 stop_on_warnings = false
 
 changed_ruby_files = `git diff-index --name-only --cached HEAD`.split("\n").inject([]) do |files, line|
-  files << line.chomp if line =~ /(.+\.(e?rb|task|rake)|Rakefile)/
+  files << line.chomp if line =~ /(.+\.(e?rb|task|rake|thor)|[Rr]akefile|[Tt]horfile)/
   files
 end
 
