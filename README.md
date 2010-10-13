@@ -1,9 +1,6 @@
 # DESCRIPTION
 
 A hook script to verify that only syntactically valid ruby code is commited.
-Called by git-commit with no arguments.  The hook should
-exit with non-zero status after issuing an appropriate message if
-it wants to stop the commit.
 
 # INSTALLATION
 
@@ -12,12 +9,14 @@ directory, and make sure it is executable ("chmod +x .git/hooks/pre-commit")
 
 # REQUIREMENTS
 
-Requires Ruby 1.8.6 or better
+Requires Ruby 1.8.6 or better, Git 1.7 or better
 
-Tested only with Git 1.6.4-rc1, but should work with any Git 1.6.*
-If you're running it with any other versions of Git, I'd love to hear
-from your experiences (both successes and failures)
+If Rubinius is installed and available via `rbx`, it'll be used instead of the normal Ruby executable.
 
 # LICENSE
 
 Licensed under the MIT License. See LICENSE file for details.
+
+# AUTHORS
+
+Written by Markus Prinz, with contributions by Jérémy Lecour
