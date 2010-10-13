@@ -11,7 +11,7 @@ directory, and make sure it is executable ("chmod +x .git/hooks/pre-commit")
 
 Requires Ruby 1.8.6 or better, Git 1.7 or better
 
-If Rubinius is installed and available via `rbx`, it'll be used instead of the normal Ruby executable.
+If Rubinius is installed and available via `rbx`, the hook will use it to test the Ruby files for warnings and errors.
 
 # LICENSE
 
