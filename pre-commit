@@ -17,6 +17,9 @@ include Open3
 # Set this to true if you want warnings to stop your commit
 stop_on_warnings = false
 
+compiler_ruby = `which rbx`.strip
+compiler_ruby = `which ruby`.strip if compiler_ruby.length == 0
+
 changed_ruby_files = `git diff-index --name-only --cached HEAD`.split("\n").inject([]) do |files, line|
   files << line.chomp if line =~ /(.+\.(e?rb|task|rake|thor)|[Rr]akefile|[Tt]horfile)/
   files
@@ -26,9 +29,9 @@ problematic_files = changed_ruby_files.inject([]) do |problematic_files, file|
   if File.readable? file
     cmd = if file =~ /\.erb\z/
       # Set trim mode to "-", just as Rails does
-      "erb -xT - #{file} | ruby -c"
+      "erb -xT - #{file} | #{compiler_ruby} -wc"
     else
-      "ruby -c #{file}"
+      "#{compiler_ruby} -wc #{file}"
     end
 
     errors = nil
