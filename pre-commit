@@ -12,7 +12,10 @@ require 'open3'
 include Open3
 
 # Set this to true if you want warnings to stop your commit
-stop_on_warnings = false
+stop_on_warnings = (`git config --bool hooks.stop-on-warnings` != "false\n")
+
+# Set this to true if you 
+skip_erb_files = (`git config --bool hooks.skip-erb-files` == "true\n")
 
 compiler_ruby = `which rbx`.strip
 compiler_ruby = `which ruby`.strip if compiler_ruby.length == 0
@@ -26,21 +29,23 @@ problematic_files = changed_ruby_files.inject([]) do |problematic_files, file|
   if File.readable? file
     cmd = if file =~ /\.erb\z/
       # Set trim mode to "-", just as Rails does
-      "erb -xT - #{file} | #{compiler_ruby} -wc"
+      "erb -xT - #{file} | #{compiler_ruby} -wc" unless skip_erb_files
     else
       "#{compiler_ruby} -wc #{file}"
     end
 
-    errors = nil
-    popen3(cmd) do |stdin, stdout, stderr|
-      errors = stderr.read.split("\n")
-    end
-
-    errors.reject!{ |line| line =~ /[0-9]+:\s+warning:/ } unless stop_on_warnings
-
-    unless errors.empty?
-      errors.map!{ |line| line.sub(/#{file}:/, '') }
-      problematic_files << "#{file}:\n#{errors.join("\n")}"
+    unless cmd.nil? then
+      errors = nil
+      popen3(cmd) do |stdin, stdout, stderr|
+        errors = stderr.read.split("\n")
+      end
+  
+      errors.reject!{ |line| line =~ /[0-9]+:\s+warning:/ } unless stop_on_warnings
+  
+      unless errors.empty?
+        errors.map!{ |line| line.sub(/#{file}:/, '') }
+        problematic_files << "#{file}:\n#{errors.join("\n")}"
+      end
     end
   end
 
