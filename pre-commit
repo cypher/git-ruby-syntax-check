@@ -14,9 +14,6 @@ include Open3
 # Set this to true if you want warnings to stop your commit
 stop_on_warnings = (`git config --bool hooks.stop-on-warnings` != "false\n")
 
-# Set this to true if you'd like to skip erb files
-skip_erb_files = (`git config --bool hooks.skip-erb-files` == "true\n")
-
 def cmd_path(cmd)
   p = `which #{cmd}`.strip
   p if p.length > 0
@@ -53,7 +50,7 @@ end
 problematic_files = changed_ruby_files.inject([]) do |problematic_files, file|
   if File.readable? file
     cmd = if file =~ /\.erb\z/
-      check_erb_cmd(file) unless skip_erb_files
+      check_erb_cmd(file)
     else
       check_rb_cmd(file)
     end
