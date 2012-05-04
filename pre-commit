@@ -14,54 +14,56 @@ include Open3
 # Set this to true if you want warnings to stop your commit
 stop_on_warnings = (`git config --bool hooks.stop-on-warnings` != "false\n")
 
-# Set this to true if you'd like to skip erb files
-skip_erb_files = (`git config --bool hooks.skip-erb-files` == "true\n")
-
-def compiler_ruby
-  @compiler_ruby ||= begin
-                       ruby_compiler = `which rbx`.strip
-                       `which ruby`.strip if ruby_compiler.length == 0
-
-                       ruby_compiler
-                     end
+def cmd_path(cmd)
+  p = `which #{cmd}`.strip
+  p if p.length > 0
 end
 
-def check_erb(file)
-  erb_cmd = "erb -xT %s | #{compiler_ruby} -wc"
+def compiler_ruby
+  @compiler_ruby ||= cmd_path('rbx') or cmd_path('ruby') or raise 'Ruby compiler not found!'
+end
 
-  # This way, .erb templates in Rails 3 projects should be
-  # syntax checked correctly
-  if (bundle_path = `which bundle`.strip).length > 0
-    erb_cmd = "#{bundle_path} exec erubis -z #{file}"
-  elsif (erubis_path = `which erubis`.strip).length > 0
-    erb_cmd = "#{erubis_path} -z #{file}"
+def check_rb_cmd(file)
+  "#{compiler_ruby} -wc #{file}"
+end
+
+def check_erb_cmd(file)
+  # Use erubis if it is available; so that .erb templates in Rails 3 projects will be
+  # syntax-checked correctly. If using `bundle` we also need to test-run it first to
+  # make sure that a Gemfile exists.
+  @erb_cmd ||= if bundle_path = cmd_path('bundle') and `#{bundle_path}` and $? == 0
+    "#{bundle_path} exec erubis -z %s"
+  elsif erubis_path = cmd_path('erubis')
+    "#{erubis_path} -z %s"
+  elsif erb_path = cmd_path('erb')
+    # Set trim mode to "-", just as Rails does
+    "#{erb_path} -xT - %s | #{compiler_ruby} -wc"
+  else
+    raise "eRuby parser not found!"
   end
-
-  erb_cmd
+  @erb_cmd % file
 end
 
 changed_ruby_files = `git diff-index --name-only --cached HEAD`.split("\n").inject([]) do |files, line|
   files << line.chomp if line =~ /(.+\.(e?rb|task|rake|thor)|[Rr]akefile|[Tt]horfile)/
-  files
 end
 
 problematic_files = changed_ruby_files.inject([]) do |problematic_files, file|
   if File.readable? file
     cmd = if file =~ /\.erb\z/
-      # Set trim mode to "-", just as Rails does
-      check_erb(file) unless skip_erb_files
+      check_erb_cmd(file)
     else
-      "#{compiler_ruby} -wc #{file}"
+      check_rb_cmd(file)
     end
 
     unless cmd.nil? then
       errors = nil
       popen3(cmd) do |stdin, stdout, stderr|
-        errors = stderr.read.split("\n")
+        errors = stdout.read.split("\n") + stderr.read.split("\n")
       end
-
+      # erubis prints its warnings on stdout, so we need to scan everything.
+      errors.reject!{ |line| line =~ /Syntax OK/ }
       errors.reject!{ |line| line =~ /[0-9]+:\s+warning:/ } unless stop_on_warnings
-
       unless errors.empty?
         errors.map!{ |line| line.sub(/#{file}:/, '') }
         problematic_files << "#{file}:\n#{errors.join("\n")}"
