@@ -11,6 +11,12 @@
 require 'open3'
 include Open3
 
+# Remove the first two components of the path, as they were set by Git
+# and interfere with rvm/rbenv.
+if ENV['PATH'] =~ %r{\A/usr/libexec/git-core:/usr/bin:?(.*)\z}
+  ENV['PATH'] = $1
+end
+
 # Set this to true if you want warnings to stop your commit
 stop_on_warnings = (`git config --bool hooks.stop-on-warnings` != "false\n")
 
