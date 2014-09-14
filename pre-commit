@@ -9,52 +9,67 @@
 # Put this code into a file called "pre-commit" inside your .git/hooks
 # directory, and make sure it is executable ("chmod +x .git/hooks/pre-commit")
 
+# Ruby 2 or higher required
+if RUBY_VERSION.to_f < 2.0
+  $stderr.puts "Ruby version 2.0 or higher required!"
+  exit 1
+end
+
+require 'shellwords'
 require 'open3'
 include Open3
 
 # Set this to true if you want warnings to stop your commit
-stop_on_warnings = (`git config --bool hooks.stop-on-warnings` != "false\n")
+stop_on_warnings = (%x(git config --bool hooks.stop-on-warnings).chomp != "false")
 
-# Set this to true if you 
-skip_erb_files = (`git config --bool hooks.skip-erb-files` == "true\n")
+# Set this to true if you'd like to skip checking erb files
+skip_erb_files = (%x(git config --bool hooks.skip-erb-files).chomp == "true")
 
-compiler_ruby = `which rbx`.strip
-compiler_ruby = `which ruby`.strip if compiler_ruby.length == 0
+# Set this if you'd like to use a specific ruby executable to for syntax checking
+ruby_compiler = %x(git config hooks.ruby-compiler).chomp
+if ruby_compiler.empty?
+  compiler_ruby = %x(which ruby).chomp
+end
+
+if compiler_ruby.nil? or compiler_ruby == ""
+  $stderr.puts "Couldn't find `rbx` or `ruby` executable!"
+  exit 1
+end
 
 changed_ruby_files = `git diff-index --name-only --cached HEAD`.split("\n").inject([]) do |files, line|
   files << line.chomp if line =~ /(.+\.(e?rb|task|rake|thor)|[Rr]akefile|[Tt]horfile)/
   files
 end
 
-problematic_files = changed_ruby_files.inject([]) do |problematic_files, file|
-  if File.readable? file
-    cmd = if file =~ /\.erb\z/
-      # Set trim mode to "-", just as Rails does
-      "erb -xT - #{file} | #{compiler_ruby} -wc" unless skip_erb_files
-    else
-      "#{compiler_ruby} -wc #{file}"
-    end
+warnings_and_errors = []
 
-    unless cmd.nil? then
-      errors = nil
-      popen3(cmd) do |stdin, stdout, stderr|
-        errors = stderr.read.split("\n")
-      end
-  
-      errors.reject!{ |line| line =~ /[0-9]+:\s+warning:/ } unless stop_on_warnings
-  
-      unless errors.empty?
-        errors.map!{ |line| line.sub(/#{file}:/, '') }
-        problematic_files << "#{file}:\n#{errors.join("\n")}"
-      end
-    end
+changed_ruby_files.each do |file|
+  return if not File.readable?(file)
+
+  if file =~ /\.erb\z/
+    return if skip_erb_files
+
+    # Set trim mode to "-", just as Rails does
+    cmd = [["erb", "-xT -", file].shelljoin, " | ", [compiler_ruby, "-wc"].shelljoin].join
+  else
+    cmd = [compiler_ruby, "-wc", file].shelljoin
   end
 
-  problematic_files
+  errors = []
+  popen3(cmd) do |stdin, stdout, stderr|
+    errors = stderr.read.split("\n")
+  end
+
+  errors.reject!{ |line| line =~ /[0-9]+:\s+warning:/ } unless stop_on_warnings
+
+  if errors.any?
+    errors.map!{ |line| line.sub(/#{file}:/, '') }
+    warnings_and_errors << "#{file}:\n#{errors.join("\n")}"
+  end
 end
 
-if problematic_files.size > 0
-  $stderr.puts problematic_files.join("\n\n")
+if warnings_and_errors.any?
+  $stderr.puts warnings_and_errors.join("\n\n")
   exit 1
 else
   # All is well
