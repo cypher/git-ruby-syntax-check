@@ -44,10 +44,10 @@ end
 warnings_and_errors = []
 
 changed_ruby_files.each do |file|
-  return if not File.readable?(file)
+  next if not File.readable?(file)
 
   if file =~ /\.erb\z/
-    return if skip_erb_files
+    next if skip_erb_files
 
     # Set trim mode to "-", just as Rails does
     cmd = [["erb", "-xT -", file].shelljoin, " | ", [compiler_ruby, "-wc"].shelljoin].join
