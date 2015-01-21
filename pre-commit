@@ -44,19 +44,23 @@ end
 warnings_and_errors = []
 
 changed_ruby_files.each do |file|
-  return if not File.readable?(file)
+  next if not File.readable?(file)
 
   if file =~ /\.erb\z/
-    return if skip_erb_files
-
+    next if skip_erb_files
+    striped_content = File.read(file).gsub(/(<%=)(.*(do|\{)(\s*\|[^|]*\|)?\s*%>)/, "<%\\2")
     # Set trim mode to "-", just as Rails does
-    cmd = [["erb", "-xT -", file].shelljoin, " | ", [compiler_ruby, "-wc"].shelljoin].join
+    cmd = [["erb", "-xT-"].shelljoin, " | ", [compiler_ruby, "-wc"].shelljoin].join
   else
     cmd = [compiler_ruby, "-wc", file].shelljoin
   end
 
   errors = []
   popen3(cmd) do |stdin, stdout, stderr|
+    if file =~ /\.erb\z/
+      stdin.puts striped_content
+      stdin.close
+    end
     errors = stderr.read.split("\n")
   end
 
