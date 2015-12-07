@@ -9,9 +9,9 @@
 # Put this code into a file called "pre-commit" inside your .git/hooks
 # directory, and make sure it is executable ("chmod +x .git/hooks/pre-commit")
 
-# Ruby 2 or higher required
-if RUBY_VERSION.to_f < 2.0
-  $stderr.puts "Ruby version 2.0 or higher required!"
+# Ruby 2.2 or higher required
+if RUBY_VERSION.to_f < 2.2
+  $stderr.puts "Ruby version 2.2 or higher required!"
   exit 1
 end
 
